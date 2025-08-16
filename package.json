@@ -1,0 +1,12 @@
+{
+  "name": "build-your-own-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate-readme": "node generate-readme.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
