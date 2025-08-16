@@ -74,6 +74,17 @@ function thousandsSeparatorOptimized(n) {
   return result;
 }
 
+// 使用 Intl.NumberFormat 的千分位分割函数
+function thousandsSeparatorIntl(n) {
+  
+  try {
+  const formatter = new Intl.NumberFormat('en-US');
+  return formatter.format(Number(n));
+  } catch (error) {
+    throw new Error(`Failed to format percentage: ${error.message}`);
+  }
+}
+
 // 测试用例
 function testThousandsSeparator() {
   const testCases = [
@@ -86,18 +97,21 @@ function testThousandsSeparator() {
     { input: -123.456, expected: '-123.456' },
   ];
   
-  console.log('测试原始版本：');
+  console.log('=== 测试原始版本 ===');
   testCases.forEach(({ input, expected }) => {
     const result = thousandsSeparator(input);
     console.log(`${input} -> ${result} ${result === expected ? '✓' : '✗'}`);
   });
   
-  console.log('\n测试优化版本：');
+  console.log('\n=== 测试优化版本 ===');
   testCases.forEach(({ input, expected }) => {
     const result = thousandsSeparatorOptimized(input);
     console.log(`${input} -> ${result} ${result === expected ? '✓' : '✗'}`);
   });
+  
+  console.log('\n=== 测试 Intl 版本 ===');
+  testCases.forEach(({ input, expected }) => {
+    const result = thousandsSeparatorIntl(input);
+    console.log(`${input} -> ${result} ${result === expected ? '✓' : '✗'}`);
+  });
 }
-
-// 如果需要运行测试，取消注释下面的行
-// testThousandsSeparator();
