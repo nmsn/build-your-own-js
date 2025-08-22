@@ -1,5 +1,5 @@
 /**
- * 类式继承
+ * 类式继承（原型链继承）
  * 缺点：
  * 1.父类中的共有属性如果为引用类型，会在子类中被所有实例公用。如果子类实例改变共有属性会影响父类。
  * 2.子类实现的继承是靠其原型prototype对父类的实例化实现的，因此在创建父类的时候，是无法向父类传递参数的。 // TODO 没理解为何不能传递参数
@@ -91,7 +91,7 @@ const book = {
 };
 
 function createBook() {
-  var o = new inheritObject(obj);
+  var o = new inheritObject(book);
   
   o.getName = function() {
     console.log(name);
