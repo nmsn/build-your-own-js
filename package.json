@@ -4,9 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "update-readme": "node generate-readme.js"
+    "ur": "node generate-readme.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": [
+    "javascript",
+    "build-your-own-js"
+  ],
+  "author": "nmsn",
+  "license": "MIT"
 }
