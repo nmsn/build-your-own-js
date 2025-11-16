@@ -40,7 +40,7 @@ class MyPromise {
   then(onFulfilled, onRejected) {
     const promise2 = new MyPromise((resolve, reject) => {
       if (this.status === MyPromise.FULFILLED) {
-        // 使用微任务
+        // 原生微任务方法 window.queueMicrotask
         queueMicrotask(() => {
           try {
             const x = onFulfilled(this.value);
@@ -115,70 +115,43 @@ class MyPromise {
   static reject(reason) {
     return new MyPromise((_, reject) => reject(reason));
   }
+}
 
-  static all(promises) {
-    return new MyPromise((resolve, reject) => {
-      const results = [];
-      let completedCount = 0;
-
-      promises.forEach((promise, index) => {
-        MyPromise.resolve(promise).then((value) => {
-          results[index] = value;
-          completedCount++;
-          if (completedCount === promises.length) {
-            resolve(results);
-          }
-        }, reject);
-      });
-    });
+// 最简单版本
+class MyPromise {
+  // 构造方法
+  constructor(executor) {
+    // 初始化值
+    this.initValue()
+    // 初始化this指向
+    this.initBind()
+    // 执行传进来的函数
+    executor(this.resolve, this.reject)
   }
 
-  static allSettled(promises) {
-    return new MyPromise((resolve) => {
-      const results = [];
-      let completedCount = 0;
-
-      promises.forEach((promise, index) => {
-        MyPromise.resolve(promise).then(
-          (value) => {
-            results[index] = value;
-            completedCount++;
-            if (completedCount === promises.length) {
-              resolve(results);
-            }
-          },
-          (reason) => {
-            results[index] = reason;
-            completedCount++;
-            if (completedCount === promises.length) {
-              resolve(results);
-            }
-          }
-        );
-      });
-    });
+  initBind() {
+    // 初始化this
+    this.resolve = this.resolve.bind(this)
+    this.reject = this.reject.bind(this)
   }
 
-  static race(promises) {
-    return new MyPromise((resolve, reject) => {
-      promises.forEach((promise) => {
-        MyPromise.resolve(promise).then(resolve, reject);
-      });
-    });
+  initValue() {
+    // 初始化值
+    this.PromiseResult = null // 终值
+    this.PromiseState = 'pending' // 状态
   }
 
-  static any(promises) {
-    const errors = [];
-    let rejectedCount = 0;
+  resolve(value) {
+    // 如果执行resolve，状态变为fulfilled
+    this.PromiseState = 'fulfilled'
+    // 终值为传进来的值
+    this.PromiseResult = value
+  }
 
-    promises.forEach((promise, index) => {
-      MyPromise.resolve(promise).then(resolve, (error) => {
-        errors[index] = error;
-        rejectedCount++;
-        if (rejectedCount === promises.length) {
-          reject(new AggregateError(errors, "All promises were rejected"));
-        }
-      });
-    });
+  reject(reason) {
+    // 如果执行reject，状态变为rejected
+    this.PromiseState = 'rejected'
+    // 终值为传进来的reason
+    this.PromiseResult = reason
   }
 }
