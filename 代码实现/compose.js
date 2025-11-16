@@ -17,6 +17,7 @@ function compose(...fns) {
   // 注意这里：每次的执行结果都是返回一个函数，因此 a 是累计的函数（不是执行结果）
   return fns.reduce(
     (a, b) =>
+      // 下面这个才是返回的执行函数
       (...args) =>
         a(b(...args))
   );
