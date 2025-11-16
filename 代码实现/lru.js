@@ -1,3 +1,65 @@
+// 简化版 LRU 实现（仅使用 Map）
+// map 能够记录顺序
+class SimpleLRU {
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.cache = new Map();
+  }
+  
+  get(key) {
+    if (this.cache.has(key)) {
+      const value = this.cache.get(key);
+      // 删除后重新插入，利用 Map 的插入顺序特性
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    return -1;
+  }
+  
+  put(key, value) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.capacity) {
+      // 删除最旧的元素（Map 中第一个元素）
+      // keys() 方法返回一个迭代器，next() 方法返回第一个元素
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+  
+  print() {
+    console.log('Simple LRU:', Array.from(this.cache.entries()));
+  }
+}
+
+// 简化版测试
+function testSimpleLRU() {
+  console.log('\n=== Simple LRU Cache 测试 ===');
+  
+  const simpleLru = new SimpleLRU(3);
+  
+  simpleLru.put(1, 'a');
+  simpleLru.put(2, 'b');
+  simpleLru.put(3, 'c');
+  simpleLru.print();
+  
+  console.log('get(2):', simpleLru.get(2));
+  simpleLru.print();
+  
+  simpleLru.put(4, 'd');
+  simpleLru.print();
+}
+
+// 运行测试
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { LRUCache, SimpleLRU };
+} else {
+  testLRU();
+  testSimpleLRU();
+}
+
 // LRU (Least Recently Used) 缓存实现
 // 使用双向链表 + 哈希表实现 O(1) 时间复杂度的 get 和 put 操作
 
@@ -135,65 +197,4 @@ function testLRU() {
   lru.print(); // 3:updated_c -> 4:d -> 2:b
   
   console.log('当前缓存大小:', lru.size());
-}
-
-// 简化版 LRU 实现（仅使用 Map）
-// map 能够记录顺序
-class SimpleLRU {
-  constructor(capacity) {
-    this.capacity = capacity;
-    this.cache = new Map();
-  }
-  
-  get(key) {
-    if (this.cache.has(key)) {
-      const value = this.cache.get(key);
-      // 删除后重新插入，利用 Map 的插入顺序特性
-      this.cache.delete(key);
-      this.cache.set(key, value);
-      return value;
-    }
-    return -1;
-  }
-  
-  put(key, value) {
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    } else if (this.cache.size >= this.capacity) {
-      // 删除最旧的元素（Map 中第一个元素）
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-  
-  print() {
-    console.log('Simple LRU:', Array.from(this.cache.entries()));
-  }
-}
-
-// 简化版测试
-function testSimpleLRU() {
-  console.log('\n=== Simple LRU Cache 测试 ===');
-  
-  const simpleLru = new SimpleLRU(3);
-  
-  simpleLru.put(1, 'a');
-  simpleLru.put(2, 'b');
-  simpleLru.put(3, 'c');
-  simpleLru.print();
-  
-  console.log('get(2):', simpleLru.get(2));
-  simpleLru.print();
-  
-  simpleLru.put(4, 'd');
-  simpleLru.print();
-}
-
-// 运行测试
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { LRUCache, SimpleLRU };
-} else {
-  testLRU();
-  testSimpleLRU();
 }
