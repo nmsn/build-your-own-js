@@ -79,3 +79,34 @@ Promise.resolve()
 
 // 这是因为等待 Promise.resolve(4) 的解析需要一个微任务（这期间打印了 2），resolve 过程中发现是 Promise（准确的说是 thenable），V8 会进行一个不同处理，将其入列一个新任务，这期间打印了 3，然后在第四轮微任务中，第一个 Promise 打印 4，第 2 个 Promise 打印 5。
 
+async function async1() {
+  console.log('async1')
+  await async2()
+  console.log('async1 end')
+}
+async function async2() {
+  console.log('async2')
+}
+console.log('script start')
+setTimeout(() => {
+  console.log('setTimeOut')
+}, 0)
+async1()
+new Promise((resolve) => {
+  console.log('promise')
+  resolve()
+}).then(() => {
+  console.log('promise2')
+})
+console.log('script end')
+
+/**
+ * script start
+ * async1
+ * async2
+ * promise
+ * script end
+ * async1 end
+ * promise2
+ * setTimeOut
+ */
