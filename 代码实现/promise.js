@@ -1,263 +1,142 @@
+const PENDING  = 'pending'
+const FULFILLED = 'fulfilled'
+const REJECTED  = 'rejected'
+
 class MyPromise {
-  // Promise状态常量
-  static PENDING = "pending";
-  static FULFILLED = "fulfilled";
-  static REJECTED = "rejected";
+  #state = PENDING
+  #value = undefined
+  #handlers = []  // { onFulfilled, onRejected, resolve, reject }
 
   constructor(executor) {
-    this.state = MyPromise.PENDING;
-    this.value = undefined;
-    this.reason = undefined;
-    this.onFulfilledCallbacks = [];
-    this.onRejectedCallbacks = [];
-
-    const resolve = (value) => {
-      if (this.state === MyPromise.PENDING) {
-        this.state = MyPromise.FULFILLED;
-        this.value = value;
-        this.onFulfilledCallbacks.forEach((callback) => callback());
-      }
-    };
-
-    const reject = (reason) => {
-      if (this.state === MyPromise.PENDING) {
-        this.state = MyPromise.REJECTED;
-        this.reason = reason;
-        this.onRejectedCallbacks.forEach((callback) => callback());
-      }
-    };
-
     try {
-      executor(resolve, reject);
-    } catch (error) {
-      reject(error);
+      executor(this.#resolve.bind(this), this.#reject.bind(this))
+    } catch (e) {
+      this.#reject(e)
     }
   }
 
-  then(onFulfilled, onRejected) {
-    // 参数可选，提供默认值
-    onFulfilled =
-      typeof onFulfilled === "function" ? onFulfilled : (value) => value;
-    onRejected =
-      typeof onRejected === "function"
-        ? onRejected
-        : (reason) => {
-            throw reason;
-          };
+  #resolve(value) {
+    if (this.#state !== PENDING) return
+    // 如果 resolve 的值仍然是一个 thenable，继续展开
+    if (value && typeof value.then === 'function') {
+      value.then(this.#resolve.bind(this), this.#reject.bind(this))
+      return
+    }
+    this.#state = FULFILLED
+    this.#value = value
+    this.#run()
+  }
 
-    const promise2 = new MyPromise((resolve, reject) => {
-      if (this.state === MyPromise.FULFILLED) {
-        // 使用微任务
-        queueMicrotask(() => {
-          try {
-            const x = onFulfilled(this.value);
-            this.resolvePromise(promise2, x, resolve, reject);
-          } catch (error) {
-            reject(error);
-          }
-        });
-      } else if (this.state === MyPromise.REJECTED) {
-        queueMicrotask(() => {
-          try {
-            const x = onRejected(this.reason);
-            this.resolvePromise(promise2, x, resolve, reject);
-          } catch (error) {
-            reject(error);
-          }
-        });
-      } else if (this.state === MyPromise.PENDING) {
-        this.onFulfilledCallbacks.push(() => {
-          queueMicrotask(() => {
-            try {
-              const x = onFulfilled(this.value);
-              this.resolvePromise(promise2, x, resolve, reject);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
+  #reject(reason) {
+    if (this.#state !== PENDING) return
+    this.#state = REJECTED
+    this.#value = reason
+    this.#run()
+  }
 
-        this.onRejectedCallbacks.push(() => {
-          queueMicrotask(() => {
-            try {
-              const x = onRejected(this.reason);
-              this.resolvePromise(promise2, x, resolve, reject);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
+  // 处理所有挂起的 handler
+  #run() {
+    this.#handlers.forEach(handler => this.#runOne(handler))
+    this.#handlers = []
+  }
+
+  #runOne({ onFulfilled, onRejected, resolve, reject }) {
+    // 用微任务模拟异步（原生 Promise 使用 microtask）
+    queueMicrotask(() => {
+      const isFulfilled = this.#state === FULFILLED
+      const callback = isFulfilled ? onFulfilled : onRejected
+
+      // 没有传对应的回调，直接透传给下一个 promise
+      if (typeof callback !== 'function') {
+        isFulfilled ? resolve(this.#value) : reject(this.#value)
+        return
       }
-    });
 
-    return promise2;
+      try {
+        resolve(callback(this.#value))
+      } catch (e) {
+        reject(e)
+      }
+    })
+  }
+
+  then(onFulfilled, onRejected) {
+    return new MyPromise((resolve, reject) => {
+      this.#handlers.push({ onFulfilled, onRejected, resolve, reject })
+      // 如果调用 then 时状态已经确定，直接执行
+      if (this.#state !== PENDING) this.#run()
+    })
   }
 
   catch(onRejected) {
-    return this.then(null, onRejected);
+    return this.then(undefined, onRejected)
   }
 
   finally(onFinally) {
     return this.then(
-      (value) => MyPromise.resolve(onFinally()).then(() => value),
-      (reason) =>
-        MyPromise.resolve(onFinally()).then(() => {
-          throw reason;
-        })
-    );
+      value  => MyPromise.resolve(onFinally()).then(() => value),
+      reason => MyPromise.resolve(onFinally()).then(() => { throw reason })
+    )
   }
 
-  // Promise解析过程
-  resolvePromise(promise2, x, resolve, reject) {
-    // 避免循环引用
-    if (promise2 === x) {
-      return reject(new TypeError("Chaining cycle detected for promise"));
-    }
+  // ---------- 静态方法 ----------
 
-    if (x instanceof MyPromise) {
-      x.then(resolve, reject);
-    } else if (
-      x !== null &&
-      (typeof x === "object" || typeof x === "function")
-    ) {
-      let called = false;
-      try {
-        const then = x.then;
-        if (typeof then === "function") {
-          then.call(
-            x,
-            (y) => {
-              if (called) return;
-              called = true;
-              this.resolvePromise(promise2, y, resolve, reject);
-            },
-            (r) => {
-              if (called) return;
-              called = true;
-              reject(r);
-            }
-          );
-        } else {
-          resolve(x);
-        }
-      } catch (error) {
-        if (called) return;
-        called = true;
-        reject(error);
-      }
-    } else {
-      resolve(x);
-    }
-  }
-
-  // 静态方法
   static resolve(value) {
-    if (value instanceof MyPromise) {
-      return value;
-    }
-    return new MyPromise((resolve) => resolve(value));
+    if (value instanceof MyPromise) return value
+    return new MyPromise(resolve => resolve(value))
   }
 
   static reject(reason) {
-    return new MyPromise((resolve, reject) => reject(reason));
+    return new MyPromise((_, reject) => reject(reason))
   }
 
   static all(promises) {
     return new MyPromise((resolve, reject) => {
-      if (!Array.isArray(promises)) {
-        return reject(new TypeError("Argument must be an array"));
-      }
-
-      if (promises.length === 0) {
-        return resolve([]);
-      }
-
-      const results = [];
-      let completedCount = 0;
-
-      promises.forEach((promise, index) => {
-        MyPromise.resolve(promise).then((value) => {
-          results[index] = value;
-          completedCount++;
-          if (completedCount === promises.length) {
-            resolve(results);
-          }
-        }, reject);
-      });
-    });
+      const results = []
+      let count = 0
+      if (promises.length === 0) return resolve(results)
+      promises.forEach((p, i) => {
+        MyPromise.resolve(p).then(value => {
+          results[i] = value
+          if (++count === promises.length) resolve(results)
+        }, reject)
+      })
+    })
   }
 
   static allSettled(promises) {
-    return new MyPromise((resolve) => {
-      if (!Array.isArray(promises)) {
-        return resolve([]);
-      }
-
-      if (promises.length === 0) {
-        return resolve([]);
-      }
-
-      const results = [];
-      let completedCount = 0;
-
-      promises.forEach((promise, index) => {
-        MyPromise.resolve(promise).then(
-          (value) => {
-            results[index] = { status: "fulfilled", value };
-            completedCount++;
-            if (completedCount === promises.length) {
-              resolve(results);
-            }
-          },
-          (reason) => {
-            results[index] = { status: "rejected", reason };
-            completedCount++;
-            if (completedCount === promises.length) {
-              resolve(results);
-            }
-          }
-        );
-      });
-    });
+    return MyPromise.all(
+      promises.map(p =>
+        MyPromise.resolve(p).then(
+          value  => ({ status: FULFILLED, value }),
+          reason => ({ status: REJECTED,  reason })
+        )
+      )
+    )
   }
 
   static race(promises) {
     return new MyPromise((resolve, reject) => {
-      if (!Array.isArray(promises)) {
-        return reject(new TypeError("Argument must be an array"));
-      }
-
-      promises.forEach((promise) => {
-        MyPromise.resolve(promise).then(resolve, reject);
-      });
-    });
+      promises.forEach(p => MyPromise.resolve(p).then(resolve, reject))
+    })
   }
 
   static any(promises) {
     return new MyPromise((resolve, reject) => {
-      if (!Array.isArray(promises)) {
-        return reject(new TypeError("Argument must be an array"));
-      }
-
-      if (promises.length === 0) {
-        return reject(new AggregateError([], "All promises were rejected"));
-      }
-
-      const errors = [];
-      let rejectedCount = 0;
-
-      promises.forEach((promise, index) => {
-        MyPromise.resolve(promise).then(resolve, (error) => {
-          errors[index] = error;
-          rejectedCount++;
-          if (rejectedCount === promises.length) {
-            reject(new AggregateError(errors, "All promises were rejected"));
-          }
-        });
-      });
-    });
+      const errors = []
+      let count = 0
+      if (promises.length === 0) return reject(new AggregateError([], 'All promises were rejected'))
+      promises.forEach((p, i) => {
+        MyPromise.resolve(p).then(resolve, reason => {
+          errors[i] = reason
+          if (++count === promises.length) reject(new AggregateError(errors, 'All promises were rejected'))
+        })
+      })
+    })
   }
 }
+
+// https://github.com/mortal-cultivation-biography/daydayup/issues/107
 
 // 使用示例和测试
 console.log("=== MyPromise 测试 ===");
