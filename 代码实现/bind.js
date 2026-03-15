@@ -20,3 +20,8 @@ Function.prototype.bind2 = function (context) {
 }
 
 // https://github.com/mqyqingfeng/Blog/issues/12
+
+// 简单版
+Function.prototype.fakeBind = function(obj, ...args) {
+  return (...rest) => this.call(obj, ...args, ...rest)
+}
