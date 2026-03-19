@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "ur": "node generate-readme.js"
+    "prepare": "node scripts/setup-git-hooks.js",
+    "test": "node --test",
+    "update-readme": "node generate-readme.js",
+    "ur": "npm run update-readme"
   },
   "keywords": [
     "javascript",

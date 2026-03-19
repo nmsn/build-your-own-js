@@ -1,6 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 
+function compareNames(a, b) {
+  return a.localeCompare(b, 'zh-Hans-CN-u-kn-true');
+}
+
+function sortByName(items) {
+  return [...items].sort((a, b) => compareNames(a.name, b.name));
+}
+
+function sortByPath(items) {
+  return [...items].sort((a, b) => compareNames(a.path, b.path));
+}
+
 /**
  * 生成README文档的函数
  * 根据当前目录结构和文件内容自动生成README.md文档
@@ -29,8 +41,10 @@ function generateREADME() {
     fs.writeFileSync(readmePath, readmeContent, 'utf8');
     console.log('✅ README.md 生成成功!');
     console.log('文件路径:', readmePath);
+    return true;
   } catch (error) {
     console.error('❌ 生成README失败:', error.message);
+    return false;
   }
 }
 
@@ -75,7 +89,7 @@ function getDirectoryStructure(dir, depth = 0, maxDepth = 3) {
   if (depth > maxDepth) return null;
   
   const items = [];
-  const files = fs.readdirSync(dir);
+  const files = fs.readdirSync(dir).sort(compareNames);
   
   // 过滤掉隐藏文件和node_modules
   const filteredFiles = files.filter(file => {
@@ -120,7 +134,7 @@ function analyzeFiles(dir) {
   };
   
   function analyzeDirectory(currentDir) {
-    const files = fs.readdirSync(currentDir);
+    const files = fs.readdirSync(currentDir).sort(compareNames);
     
     for (const file of files) {
       if (file.startsWith('.') || file === 'node_modules' || file === 'README.md') {
@@ -162,6 +176,8 @@ function analyzeFiles(dir) {
   }
   
   analyzeDirectory(dir);
+  analysis.codeFiles = sortByPath(analysis.codeFiles);
+  analysis.mainFiles = sortByPath(analysis.mainFiles);
   return analysis;
 }
 
@@ -169,8 +185,6 @@ function analyzeFiles(dir) {
  * 构建README内容
  */
 function buildReadmeContent(projectInfo, directoryStructure, fileAnalysis) {
-  const date = new Date().toLocaleDateString('zh-CN');
-  
   let content = `# ${projectInfo.name}\n\n`;
   
   if (projectInfo.description) {
@@ -178,8 +192,6 @@ function buildReadmeContent(projectInfo, directoryStructure, fileAnalysis) {
   }
   
   content += `**版本:** ${projectInfo.version}  
-`;
-  content += `**生成日期:** ${date}  
 `;
   if (projectInfo.author) {
     content += `**作者:** ${projectInfo.author}  
@@ -195,7 +207,10 @@ function buildReadmeContent(projectInfo, directoryStructure, fileAnalysis) {
   content += `### 📊 文件类型统计\n\n`;
   content += `| 文件类型 | 数量 |\n`;
   content += `|---------|------|\n`;
-  for (const [ext, count] of Object.entries(fileAnalysis.fileTypes)) {
+  const sortedFileTypes = Object.entries(fileAnalysis.fileTypes).sort(([left], [right]) =>
+    compareNames(left, right)
+  );
+  for (const [ext, count] of sortedFileTypes) {
     const extName = ext || '(无扩展名)';
     content += `| ${extName} | ${count} |\n`;
   }
@@ -259,10 +274,10 @@ function buildReadmeContent(projectInfo, directoryStructure, fileAnalysis) {
   content += `## 📖 使用说明\n\n`;
   content += `1. 本README文档由脚本自动生成\n`;
   content += `2. 如需修改，请编辑源文件或重新运行生成脚本\n`;
-  content += `3. 生成时间：${date}\n\n`;
+  content += `3. 提交前会自动刷新 README 内容\n\n`;
   
   content += `---\n\n`;
-  content += `*此文档由自动生成脚本创建于 ${date}*\n`;
+  content += `*此文档由自动生成脚本维护。*\n`;
   
   return content;
 }
@@ -315,5 +330,5 @@ module.exports = {
 
 // 如果直接运行此文件，则执行生成README
 if (require.main === module) {
-  generateREADME();
+  process.exitCode = generateREADME() ? 0 : 1;
 }
