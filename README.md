@@ -74,7 +74,7 @@
 - **compose.js**
 - **curry.js**
 - **easyPromise.js**
-- **EventBus.js**
+- **EventBus发布订阅.js**
 - **flat.js**
 - **for...of 遍历对象.js**
 - **instanceof.js**
@@ -192,7 +192,7 @@
 │   ├── compose.js
 │   ├── curry.js
 │   ├── easyPromise.js
-│   ├── EventBus.js
+│   ├── EventBus发布订阅.js
 │   ├── flat.js
 │   ├── for...of 遍历对象.js
 │   ├── instanceof.js
