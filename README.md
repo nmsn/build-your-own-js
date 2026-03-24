@@ -7,13 +7,13 @@
 
 ## 📋 项目概述
 
-本项目包含 115 个文件，涵盖多种文件类型。
+本项目包含 116 个文件，涵盖多种文件类型。
 
 ### 📊 文件类型统计
 
 | 文件类型 | 数量 |
 |---------|------|
-| .js | 114 |
+| .js | 115 |
 | .json | 1 |
 
 ### 🎯 主要文件
@@ -79,6 +79,7 @@
 - **flat.js**
 - **for...of 遍历对象.js**
 - **instanceof.js**
+- **intersection.js**
 - **lazyman.js**
 - **lru.js**
 - **messageChannel 实现 Idle.js**
@@ -199,6 +200,7 @@
 │   ├── flat.js
 │   ├── for...of 遍历对象.js
 │   ├── instanceof.js
+│   ├── intersection.js
 │   ├── lazyman.js
 │   ├── lru.js
 │   ├── messageChannel 实现 Idle.js
