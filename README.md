@@ -7,13 +7,13 @@
 
 ## 📋 项目概述
 
-本项目包含 116 个文件，涵盖多种文件类型。
+本项目包含 117 个文件，涵盖多种文件类型。
 
 ### 📊 文件类型统计
 
 | 文件类型 | 数量 |
 |---------|------|
-| .js | 115 |
+| .js | 116 |
 | .json | 1 |
 
 ### 🎯 主要文件
@@ -89,6 +89,7 @@
 - **once.js**
 - **processTasks.js**
 - **promise.js**
+- **promisify.js**
 - **randomString.js**
 - **sleep.js**
 - **softbind.js**
@@ -210,6 +211,7 @@
 │   ├── once.js
 │   ├── processTasks.js
 │   ├── promise.js
+│   ├── promisify.js
 │   ├── randomString.js
 │   ├── sleep.js
 │   ├── softbind.js
