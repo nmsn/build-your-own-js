@@ -2,6 +2,85 @@ const PENDING  = 'pending'
 const FULFILLED = 'fulfilled'
 const REJECTED  = 'rejected'
 
+
+class MyPromise {
+  constructor(executor) {
+    this._state = PENDING;
+    this._value = undefined;
+    this._handlers = [];
+
+    try {
+      executor(this._resolve.bind(this), this._reject.bind(this));
+    } catch (e) {
+      this._reject(e);
+    }
+  }
+
+  _resolve(value) {
+    if (this._state !== PENDING) return;
+    if (value && typeof value.then === 'function') {
+      value.then(this._resolve.bind(this), this._reject.bind(this));
+      return;
+    }
+    this._state = FULFILLED;
+    this._value = value;
+    this._run();
+  }
+
+  _reject(reason) {
+    if (this._state !== PENDING) return;
+    this._state = REJECTED;
+    this._value = reason;
+    this._run();
+  }
+
+  _run() {
+    this._handlers.forEach(handler => this._runOne(handler));
+    this._handlers = [];
+  }
+
+  _runOne({ onFulfilled, onRejected, resolve, reject }) {
+    queueMicrotask(() => {
+      const isFulfilled = this._state === FULFILLED;
+      const callback = isFulfilled ? onFulfilled : onRejected;
+
+      if (typeof callback !== 'function') {
+        isFulfilled ? resolve(this._value) : reject(this._value);
+        return;
+      }
+
+      try {
+        resolve(callback(this._value));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  then(onFulfilled, onRejected) {
+    return new MyPromise((resolve, reject) => {
+      this._handlers.push({ onFulfilled, onRejected, resolve, reject });
+      if (this._state !== PENDING) this._run();
+    });
+  }
+
+  catch(onRejected) {
+    return this.then(undefined, onRejected);
+  }
+
+  finally(onFinally) {
+    return this.then(
+      value => MyPromise.resolve(onFinally()).then(() => value),
+      reason => MyPromise.resolve(onFinally()).then(() => { throw reason; })
+    );
+  }
+
+  static resolve(value) {
+    if (value instanceof MyPromise) return value;
+    return new MyPromise(resolve => resolve(value));
+  }
+}
+
 class MyPromise {
   #state = PENDING
   #value = undefined
